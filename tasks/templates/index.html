@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <!-- Установка кодировки UTF-8 для корректного отображения кириллицы и специальных символов -->
+    <meta charset="utf-8">
+    <!-- Настройка вьюпорта для адаптивного отображения на мобильных устройствах (масштабирование по ширине экрана) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Заголовок страницы, отображаемый на вкладке браузера -->
+    <title>Контейнер безопасности СХД | Защита от НСД</title>
+
+    <!-- ==================== ПОДКЛЮЧЕНИЕ СТОРОННИХ БИБЛИОТЕК ==================== -->
+
+    <!-- Bootstrap 5.0.2 - фреймворк для адаптивной верстки и готовых UI-компонентов -->
+    <!-- Предоставляет CSS-классы для сетки, карточек, кнопок, навигации и т.д. -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <!-- Chart.js 4.4.0 - библиотека для построения интерактивных графиков и диаграмм -->
+    <!-- Позволяет создавать линейные, столбчатые, круговые и другие типы графиков -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- ==================== ПОЛЬЗОВАТЕЛЬСКИЕ СТИЛИ CSS ==================== -->
+    <style>
+      /* Стиль для метки "Доступ запрещен" - используется в журнале аудита */
+      /* Красный фон с белым текстом, скругленные углы */
+      .access-denied {
+        background-color: #dc3545; /* красный цвет Bootstrap danger */
+        color: white;
+        padding: 3px 8px; /* внутренние отступы */
+        border-radius: 12px; /* скругление углов */
+        font-size: 12px;
+      }
+
+      /* Стиль для метки "Доступ разрешен" - используется в журнале аудита */
+      /* Зеленый фон с белым текстом */
+      .access-granted {
+        background-color: #198754; /* зеленый цвет Bootstrap success */
+        color: white;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+
+      /* Стиль для карточек статистики - добавляет анимацию при наведении курсора */
+      .warning-card {
+        transition: transform 0.2s; /* плавный переход за 0.2 секунды */
+      }
+
+      /* Эффект при наведении на карточку - карточка поднимается вверх на 5px */
+      .warning-card:hover {
+        transform: translateY(-5px);
+      }
+
+      /* Стиль для зашифрованных данных - моноширинный шрифт и серый фон */
+      .encrypted {
+        font-family: monospace; /* моноширинный шрифт как в терминале */
+        background-color: #f8f9fa; /* светло-серый фон */
+        padding: 5px;
+        border-radius: 5px;
+      }
+
+      /* Стили для контейнеров, в которых отображаются графики Chart.js */
+      .chart-container {
+        position: relative; /* для корректного позиционирования canvas */
+        height: 300px; /* фиксированная высота области графика */
+        margin-bottom: 20px; /* отступ снизу */
+      }
+
+      /* Стиль для карточек с графиками - тень и скругление углов */
+      .stats-card {
+        border-radius: 15px; /* скругленные углы */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* легкая тень для объемности */
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ==================== БЕЗОПАСНОСТЬ ==================== -->
+    <!-- CSRF-токен Django для защиты от межсайтовой подделки запросов -->
+    <!-- При интеграции с бэкендом Django этот токен обязателен для POST-запросов -->
+    {% csrf_token %}
+
+    <!-- ==================== ШАПКА САЙТА (НАВИГАЦИОННАЯ ПАНЕЛЬ) ==================== -->
+    <!-- navbar - компонент Bootstrap для создания панели навигации -->
+    <!-- navbar-dark - темная тема, bg-dark - темно-серый фон -->
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container"> <!-- контейнер для центрирования содержимого по ширине -->
+        <span class="navbar-brand mb-0 h1"> <!-- бренд/название системы -->
+          🔒 Контейнер безопасности СХД | Защита от НСД из виртуальной сети
+        </span>
+        <!-- badge - маленький бейдж с информацией о версии и стандарте -->
+        <span class="badge bg-info">Версия 2.0 | ГОСТ 19.201-78</span>
+      </div>
+    </nav>
+
+    <!-- ==================== ОСНОВНОЕ СОДЕРЖИМОЕ ==================== -->
+    <!-- container - контейнер Bootstrap с отступами по бокам -->
+    <!-- mt-4 - margin-top: 1.5rem (отступ сверху) -->
+    <div class="container mt-4">
+
+      <!-- ==================== ИНФОРМАЦИЯ О СТУДЕНТЕ ==================== -->
+      <!-- alert - компонент Bootstrap для выделенного уведомления -->
+      <!-- alert-dark - темная тема уведомления -->
+      <div class="alert alert-dark" role="alert">
+        <strong>📋 Вагизова К.Х. | Группа КП-23-11</strong><br>
+        Лабораторная работа №1: Разработка контейнера безопасности СХД (вариант 84)
+      </div>
+
+      <!-- ==================== СТАТИСТИЧЕСКИЕ КАРТОЧКИ ==================== -->
+      <!-- row - строка сетки Bootstrap, mb-4 - отступ снизу -->
+      <div class="row mb-4">
+
+        <!-- Карточка 1: Общее количество запросов (col-md-3 - занимает 3/12 ширины на планшетах и выше) -->
+        <div class="col-md-3">
+          <div class="card warning-card text-white bg-primary"> <!-- bg-primary - синий фон -->
+            <div class="card-body">
+              <h5 class="card-title">📊 Всего запросов к СХД</h5>
+              <h2 id="totalRequests">2,847</h2> <!-- id для возможного динамического обновления через JS -->
+              <small>за последние 24 часа</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Карточка 2: Количество заблокированных НСД -->
+        <div class="col-md-3">
+          <div class="card warning-card text-white bg-danger"> <!-- bg-danger - красный фон -->
+            <div class="card-body">
+              <h5 class="card-title">🚫 Заблокировано НСД</h5>
+              <h2 id="blockedCount">156</h2>
+              <small>5.5% от общего числа</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Карточка 3: Количество легитимных (разрешенных) доступов -->
+        <div class="col-md-3">
+          <div class="card warning-card text-white bg-success"> <!-- bg-success - зеленый фон -->
+            <div class="card-body">
+              <h5 class="card-title">✅ Легитимных доступов</h5>
+              <h2 id="legitCount">2,691</h2>
+              <small>94.5% от общего числа</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Карточка 4: Активные попытки НСД в данный момент -->
+        <div class="col-md-3">
+          <div class="card warning-card text-white bg-warning"> <!-- bg-warning - желтый фон -->
+            <div class="card-body">
+              <h5 class="card-title">⚠️ Активных попыток НСД</h5>
+              <h2 id="activeAttacks">12</h2>
+              <small>IP в черном списке</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== БЛОК С ГРАФИКАМИ ==================== -->
+
+      <!-- Первый ряд графиков: два графика в ряд -->
+      <div class="row mb-4">
+
+        <!-- График 1: Линейный график динамики запросов по часам -->
+        <div class="col-md-6"> <!-- занимает половину ширины строки -->
+          <div class="card stats-card">
+            <div class="card-header bg-dark text-white"> <!-- заголовок карточки темный -->
+              📈 Динамика запросов к СХД (последние 12 часов)
+            </div>
+            <div class="card-body">
+              <!-- Контейнер для графика Chart.js -->
+              <div class="chart-container">
+                <canvas id="requestsChart"></canvas> <!-- canvas - элемент HTML5 для отрисовки графиков -->
+              </div>
+              <small class="text-muted">▸ Пик нагрузки приходится на рабочее время (10:00-18:00)</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- График 2: Столбчатая диаграмма заблокированных НСД по часам -->
+        <div class="col-md-6">
+          <div class="card stats-card">
+            <div class="card-header bg-dark text-white">
+              🚨 Динамика заблокированных НСД (последние 12 часов)
+            </div>
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="blockedChart"></canvas>
+              </div>
+              <small class="text-muted">▸ Пик атак зафиксирован в 14:00 (IP 45.67.89.10)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Второй ряд графиков: круговая диаграмма и столбчатая диаграмма типов атак -->
+      <div class="row mb-4">
+
+        <!-- График 3: Круговая диаграмма соотношения доступов -->
+        <!-- mx-auto - центрирование по горизонтали (margin-left/right auto) -->
+        <div class="col-md-6 mx-auto">
+          <div class="card stats-card">
+            <div class="card-header bg-dark text-white">
+              🥧 Соотношение доступов к СХД
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="height: 280px;"> <!-- немного меньшая высота для круговой диаграммы -->
+                <canvas id="pieChart"></canvas>
+              </div>
+              <!-- Подписи под графиком с процентами -->
+              <div class="text-center mt-2">
+                <span class="badge bg-success">Легитимные: 94.5%</span>
+                <span class="badge bg-danger ms-2">Заблокированные: 5.5%</span> <!-- ms-2 - отступ слева -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- График 4: Столбчатая диаграмма типов атак -->
+        <div class="col-md-6">
+          <div class="card stats-card">
+            <div class="card-header bg-dark text-white">
+              🎯 Типы заблокированных атак (статистика за сутки)
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="height: 280px;">
+                <canvas id="attackTypesChart"></canvas>
+              </div>
+              <small class="text-muted">▸ Брутфорс и обход ACL — самые частые векторы атак</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Третий ряд: линейный график тренда активности НСД за неделю (на всю ширину) -->
+      <div class="row mb-4">
+        <div class="col-md-12"> <!-- занимает всю ширину строки -->
+          <div class="card stats-card">
+            <div class="card-header bg-dark text-white">
+              📉 Тренд активности НСД (последние 7 дней)
+            </div>
+            <div class="card-body">
+              <div class="chart-container" style="height: 300px;">
+                <canvas id="weeklyTrendChart"></canvas>
+              </div>
+              <!-- Подписи с выводами по графику -->
+              <div class="row mt-3 text-center">
+                <div class="col-md-4">
+                  <small class="text-success">📊 Наименьшая активность: Воскресенье</small>
+                </div>
+                <div class="col-md-4">
+                  <small class="text-warning">⚠️ Рост атак в середине недели</small>
+                </div>
+                <div class="col-md-4">
+                  <small class="text-danger">🔴 Пик: Среда (34 атаки)</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== ЗАЩИЩЕННЫЕ ПРОТОКОЛЫ ==================== -->
+      <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+          🔐 Защищенные протоколы доступа к СХД
+        </div>
+        <div class="card-body">
+          <!-- Набор бейджей с поддерживаемыми протоколами -->
+          <!-- me-2 - margin-right (отступ справа) -->
+          <span class="badge bg-secondary me-2">iSCSI (шифрованный)</span>
+          <span class="badge bg-secondary me-2">NFSv4 с Kerberos</span>
+          <span class="badge bg-secondary me-2">SMB 3.0 (шифрование)</span>
+          <span class="badge bg-secondary me-2">REST API (TLS 1.3)</span>
+          <span class="badge bg-secondary me-2">SSH-туннели</span>
+        </div>
+      </div>
+
+      <!-- ==================== СТАТУС ШИФРОВАНИЯ ==================== -->
+      <!-- Темная карточка с белым текстом -->
+      <div class="card mb-4 bg-dark text-white">
+        <div class="card-body">
+          <h5 class="card-title">🔒 Статус шифрования виртуальных дисков</h5>
+          <div class="row">
+            <!-- Левая колонка: статус диска -->
+            <div class="col-md-6">
+              <small>Диск /dev/vda1:</small>
+              <!-- Progress bar - индикатор выполнения (показывает 100% зашифрованности) -->
+              <div class="progress mb-2">
+                <div class="progress-bar bg-success" style="width: 100%">LUKS AES-256 (Зашифрован)</div>
+              </div>
+            </div>
+            <!-- Правая колонка: статус каналов передачи -->
+            <div class="col-md-6">
+              <small>Каналы передачи:</small>
+              <div class="progress mb-2">
+                <div class="progress-bar bg-info" style="width: 100%">TLS 1.3 (Активен)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== ЖУРНАЛ АУДИТА ==================== -->
+      <h3><strong>📋 Журнал аудита доступа к системе хранения данных</strong></h3>
+      <p class="text-muted">Фиксирование всех операций чтения/записи и попыток НСД</p>
+
+      <!-- list-group - компонент Bootstrap для отображения списка элементов -->
+      <ul class="list-group mb-4">
+
+        <!-- Событие 1: Несанкционированный доступ --->
+        <!-- d-flex - flexbox-верстка, justify-content-between - элементы по краям, align-items-center - вертикальное центрирование -->
+        <li class="list-group-item mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <strong>🔴 14:23:11</strong> | <!-- красный кружок и время -->
+            Виртуальная машина: <code>VM-WebServer-01 (10.0.1.55)</code> | <!-- IP-адрес нарушителя -->
+            Действие: <strong>Попытка чтения /etc/shadow</strong> <!-- опасное действие -->
+            <br>
+            <small class="text-danger">⚠️ Нарушение прав доступа: субъект не авторизован для данного действия</small>
+          </div>
+          <span class="access-denied">ДОСТУП ЗАПРЕЩЕН (ошибка 403)</span>
+        </li>
+
+        <!-- Событие 2: Легитимный доступ -->
+        <li class="list-group-item mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <strong>🟢 14:20:05</strong> |
+            Контейнер: <code>App-Backend (172.17.0.3)</code> |
+            Действие: <strong>Чтение базы данных клиентов</strong>
+            <br>
+            <small class="text-success">✅ Аутентификация пройдена (сертификат валиден), права RW</small>
+          </div>
+          <span class="access-granted">ДОСТУП РАЗРЕШЕН</span>
+        </li>
+
+        <!-- Событие 3: Попытка несанкционированного монтирования диска -->
+        <li class="list-group-item mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <strong>🟠 14:15:42</strong> |
+            ВМ: <code>VM-Unknown (10.20.30.5)</code> |
+            Действие: <strong>Попытка монтирования виртуального диска /dev/vdb1</strong>
+            <br>
+            <small class="text-warning">⚠️ Несанкционированное подключение к дисковому пространству</small>
+          </div>
+          <span class="access-denied">БЛОКИРОВАНО (IP добавлен в черный список)</span>
+        </li>
+
+        <!-- Событие 4: Эксплуатация слабостей хранилища -->
+        <li class="list-group-item mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <strong>🔴 14:10:33</strong> |
+            Процесс: <code>malicious_process (PID 1337)</code> |
+            Действие: <strong>Обход ACL, чтение сегментов виртуального диска</strong>
+            <br>
+            <small class="text-danger">⚠️ Выявлена попытка эксплуатации слабости распределенного хранилища</small>
+          </div>
+          <span class="access-denied">ИНЦИДЕНТ ЗАФИКСИРОВАН, ПРОЦЕСС ОСТАНОВЛЕН</span>
+        </li>
+
+        <!-- Событие 5: Успешный доступ бэкап-сервиса -->
+        <li class="list-group-item mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <strong>🟢 14:05:18</strong> |
+            Сервис: <code>Backup-Service (192.168.1.100)</code> |
+            Действие: <strong>Запись бэкапа в защищенное хранилище</strong>
+            <br>
+            <small class="text-success">✅ Шифрование канала TLS 1.3, цифровая подпись проверена</small>
+          </div>
+          <span class="access-granted">ДОСТУП РАЗРЕШЕН (шифрование активно)</span>
+        </li>
+
+        <!-- Событие 6: Брутфорс атака -->
+        <li class="list-group-item mb-2 d-flex justify-content-between align-items-center">
+          <div>
+            <strong>🔴 13:58:22</strong> |
+            Источник: <code>45.67.89.10 (виртуальная сеть)</code> |
+            Действие: <strong>5 неудачных попыток аутентификации подряд</strong>
+            <br>
+            <small class="text-danger">⚠️ Брутфорс атака на JWT-токен</small>
+          </div>
+          <span class="access-denied">АККАУНТ БЛОКИРОВАН НА 30 МИНУТ</span>
+        </li>
+      </ul>
+
+      <!-- ==================== ПОЛИТИКИ БЕЗОПАСНОСТИ ==================== -->
+      <div class="card mb-4">
+        <div class="card-header bg-info text-white"> <!-- bg-info - голубой фон -->
+          📜 Активные политики безопасности (файл конфигурации)
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <!-- Левая колонка: белый список (доверенные субъекты) -->
+            <div class="col-md-6">
+              <h6>✅ Белый список (доверенные субъекты):</h6>
+              <ul>
+                <li><code>CN=backend-app, O=Company</code> (сертификат)</li> <!-- CN - Common Name, O - Organization -->
+                <li><code>API-Key: 7f3e8a9b... (сервис бэкапов)</code></li>
+                <li><code>VIP: 172.16.0.0/16</code> (внутренняя сеть)</li> <!-- CIDR-нотация диапазона IP -->
+              </ul>
+            </div>
+            <!-- Правая колонка: черный список (заблокированные) -->
+            <div class="col-md-6">
+              <h6>❌ Черный список (заблокированные):</h6>
+              <ul>
+                <li><code>IP: 45.67.89.10</code> (брутфорс)</li>
+                <li><code>JWT токен: eyJhbGciOi... (скомпрометирован)</code></li>
+                <li><code>Диапазон: 10.20.30.0/24</code> (подозрительная активность)</li>
+              </ul>
+            </div>
+          </div>
+          <hr> <!-- горизонтальный разделитель -->
+          <div class="row">
+            <div class="col-md-12">
+              <h6>🔒 Правила разграничения доступа (RBAC):</h6> <!-- Role-Based Access Control - ролевая модель -->
+              <ul>
+                <li><strong>Роль "Администратор":</strong> чтение/запись всех виртуальных дисков</li>
+                <li><strong>Роль "Оператор":</strong> только чтение логов и метрик</li>
+                <li><strong>Роль "Приложение":</strong> доступ только к своей базе данных</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== ТЕХНИЧЕСКИЕ ХАРАКТЕРИСТИКИ КОНТЕЙНЕРА ==================== -->
+      <div class="card">
+        <div class="card-header bg-dark text-white">
+          🐳 Контейнер безопасности СХД: технические характеристики
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <!-- Левая колонка: системные требования -->
+            <div class="col-md-6">
+              <h6>⚙️ Системные требования:</h6>
+              <ul>
+                <li><strong>ОС хоста:</strong> Альт Linux / Ubuntu Server</li> <!-- поддержка российской ОС -->
+                <li><strong>Средства контейнеризации:</strong> Docker, Podman</li>
+                <li><strong>Процессор:</strong> ≥ 4 ядер</li>
+                <li><strong>ОЗУ:</strong> ≥ 4 ГБ</li>
+                <li><strong>Диск:</strong> ≥ 20 ГБ (для логов аудита)</li>
+              </ul>
+            </div>
+            <!-- Правая колонка: криптографическая защита -->
+            <div class="col-md-6">
+              <h6>🔐 Криптографическая защита:</h6>
+              <ul>
+                <li><strong>Шифрование дисков:</strong> LUKS (AES-256)</li> <!-- Linux Unified Key Setup -->
+                <li><strong>Шифрование каналов:</strong> TLS 1.3, OpenSSL</li>
+                <li><strong>Цифровые подписи:</strong> JWT, X.509 сертификаты</li>
+                <li><strong>Хеширование:</strong> SHA-256 для целостности</li>
+              </ul>
+            </div>
+          </div>
+          <hr>
+          <div class="row">
+            <div class="col-md-12">
+              <h6>📊 Характеристики из ТЗ:</h6> <!-- соответствие техническому заданию -->
+              <ul>
+                <li><strong>Время проверки подлинности запроса:</strong> ≤ 200 мс</li>
+                <li><strong>Время восстановления после сбоя:</strong> ≤ 30 секунд</li>
+                <li><strong>Сохранность журналов аудита:</strong> гарантируется при аварийной остановке</li>
+                <li><strong>Механизм отката транзакций:</strong> при сбоях обеспечивает целостность данных</li>
+              </ul>
+            </div>
+          </div>
+          <hr>
+          <!-- Описание назначения контейнера -->
+          <small class="text-muted">
+            🔒 Контейнер изолирует систему хранения данных в защищенной среде, контролирует все сетевые запросы,
+            блокирует несанкционированный доступ из виртуальной сети. Соответствует ГОСТ 19.201-78.
+          </small>
+        </div>
+      </div>
+
+      <!-- ==================== ИНТЕГРАЦИЯ С ОС АЛЬТ ==================== -->
+      <!-- alert-success - зеленое уведомление, mt-4 - отступ сверху -->
+      <div class="alert alert-success mt-4" role="alert">
+        <strong>🖥️ Интеграция с ОС "Альт":</strong> Контейнер сертифицирован для работы с российской операционной системой "Альт" (серверная редакция). Поддерживаются мандатный контроль доступа (MLS) и ГОСТ-шифрование.
+      </div>
+
+      <br> <!-- отступ перед футером -->
+
+      <!-- ==================== ФУТЕР (НИЖНИЙ КОЛОНТИТУЛ) ==================== -->
+      <footer class="text-center text-muted"> <!-- text-center - выравнивание по центру -->
+        <hr>
+        <small>Разработано в рамках курса "Управление жизненным циклом информационных систем" | Москва 2026 | Вариант №84</small>
+        <br>
+        <small>📄 Требования к программной документации по ГОСТ 19.101-77: спецификация, текст программы, описание программы, пояснительная записка, программа и методика испытаний</small>
+      </footer>
+
+    </div> <!-- конец основного контейнера -->
+
+    <!-- ==================== ПОДКЛЮЧЕНИЕ BOOTSTRAP JavaScript ==================== -->
+    <!-- Необходим для работы интерактивных компонентов Bootstrap (модальные окна, выпадающие списки и т.д.) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <!-- ==================== СКРИПТЫ ДЛЯ ПОСТРОЕНИЯ ГРАФИКОВ ==================== -->
+    <script>
+      // ----- ДАННЫЕ ДЛЯ ГРАФИКОВ -----
+      // hours - массив меток времени (каждые 2 часа) для оси X
+      const hours = ['02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00', '00:00'];
+      // requestsData - количество запросов к СХД по часам (пик в 14:00 - 412 запросов)
+      const requestsData = [45, 32, 28, 67, 245, 389, 412, 398, 356, 278, 156, 89];
+      // blockedData - количество заблокированных НСД по часам (пик в 14:00 - 42 блокировки)
+      const blockedData = [2, 1, 0, 3, 18, 25, 42, 31, 22, 15, 8, 4];
+
+      // ----- ГРАФИК 1: Линейный график запросов к СХД -----
+      // Получаем контекст рисования для canvas с id="requestsChart"
+      const ctx1 = document.getElementById('requestsChart').getContext('2d');
+      new Chart(ctx1, {
+        type: 'line',              // тип графика: линейный
+        data: {
+          labels: hours,           // метки на оси X (время)
+          datasets: [{
+            label: 'Количество запросов',     // подпись набора данных
+            data: requestsData,               // значения на оси Y
+            borderColor: 'rgb(13, 110, 253)', // цвет линии (синий)
+            backgroundColor: 'rgba(13, 110, 253, 0.1)', // цвет заливки под линией (прозрачный синий)
+            borderWidth: 2,                   // толщина линии
+            fill: true,                       // заполнять область под линией
+            tension: 0.4,                     // сглаживание линии (0.4 - умеренное)
+            pointBackgroundColor: 'rgb(13, 110, 253)', // цвет точек на графике
+            pointBorderColor: '#fff',                 // обводка точек белым
+            pointRadius: 4,                           // радиус точек
+            pointHoverRadius: 6                       // радиус точек при наведении
+          }]
+        },
+        options: {
+          responsive: true,           // адаптация под размер контейнера
+          maintainAspectRatio: false, // отключаем сохранение пропорций (используем высоту из CSS)
+          plugins: {
+            legend: { position: 'top' }, // легенда сверху
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Запросов: ${context.raw}`; // формат всплывающей подсказки
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,       // ось Y начинается с 0
+              title: { display: true, text: 'Количество запросов' }
+            },
+            x: {
+              title: { display: true, text: 'Время (часы)' }
+            }
+          }
+        }
+      });
+
+      // ----- ГРАФИК 2: Столбчатая диаграмма заблокированных НСД -----
+      const ctx2 = document.getElementById('blockedChart').getContext('2d');
+      new Chart(ctx2, {
+        type: 'bar',                 // тип графика: столбчатая диаграмма
+        data: {
+          labels: hours,
+          datasets: [{
+            label: 'Заблокировано НСД',
+            data: blockedData,
+            backgroundColor: 'rgba(220, 53, 69, 0.7)', // цвет столбцов (красный с прозрачностью)
+            borderColor: 'rgb(220, 53, 69)',           // цвет границы столбцов
+            borderWidth: 1,
+            borderRadius: 8,         // скругление углов столбцов
+            barPercentage: 0.7       // ширина столбцов относительно доступного места
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Блокировок: ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Количество блокировок' }
+            },
+            x: {
+              title: { display: true, text: 'Время (часы)' }
+            }
+          }
+        }
+      });
+
+      // ----- ГРАФИК 3: Круговая диаграмма соотношения доступов -----
+      const ctx3 = document.getElementById('pieChart').getContext('2d');
+      new Chart(ctx3, {
+        type: 'pie',                // тип графика: круговая диаграмма
+        data: {
+          labels: ['Легитимные доступы (94.5%)', 'Заблокированные НСД (5.5%)'],
+          datasets: [{
+            data: [2691, 156],      // значения: легитимные и заблокированные
+            backgroundColor: ['rgba(25, 135, 84, 0.8)', 'rgba(220, 53, 69, 0.8)'], // зеленый и красный
+            borderColor: ['rgb(25, 135, 84)', 'rgb(220, 53, 69)'],
+            borderWidth: 2,
+            hoverOffset: 10         // смещение сектора при наведении
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 12 } } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw;
+                  const total = 2847; // общее количество запросов
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return `${label}: ${value} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // ----- ГРАФИК 4: Столбчатая диаграмма типов атак -----
+      const ctx4 = document.getElementById('attackTypesChart').getContext('2d');
+      new Chart(ctx4, {
+        type: 'bar',
+        data: {
+          labels: ['Брутфорс', 'Обход ACL', 'Монтирование', 'Инъекция', 'DoS', 'Перехват'],
+          datasets: [{
+            label: 'Количество атак',
+            data: [54, 38, 27, 19, 12, 6],
+            // Массив цветов для каждого столбца
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.7)',  // розовый
+              'rgba(255, 159, 64, 0.7)',  // оранжевый
+              'rgba(255, 205, 86, 0.7)',  // желтый
+              'rgba(75, 192, 192, 0.7)',  // бирюзовый
+              'rgba(54, 162, 235, 0.7)',  // синий
+              'rgba(153, 102, 255, 0.7)'  // фиолетовый
+            ],
+            borderColor: [
+              'rgb(255, 99, 132)',
+              'rgb(255, 159, 64)',
+              'rgb(255, 205, 86)',
+              'rgb(75, 192, 192)',
+              'rgb(54, 162, 235)',
+              'rgb(153, 102, 255)'
+            ],
+            borderWidth: 1,
+            borderRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Атак: ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Количество атак' }
+            }
+          }
+        }
+      });
+
+      // ----- ГРАФИК 5: Линейный график тренда активности НСД за неделю -----
+      const ctx5 = document.getElementById('weeklyTrendChart').getContext('2d');
+      new Chart(ctx5, {
+        type: 'line',
+        data: {
+          labels: ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'],
+          datasets: [
+            {
+              label: 'Количество атак',
+              data: [28, 31, 34, 29, 25, 18, 12],
+              borderColor: 'rgb(220, 53, 69)',           // красный цвет линии
+              backgroundColor: 'rgba(220, 53, 69, 0.1)', // полупрозрачная красная заливка
+              borderWidth: 2,
+              fill: true,                                 // заполнение под линией
+              tension: 0.3,                               // сглаживание
+              pointBackgroundColor: 'rgb(220, 53, 69)',
+              pointBorderColor: '#fff',
+              pointRadius: 5,
+              pointHoverRadius: 7
+            },
+            {
+              label: 'Среднее значение',
+              data: [25, 25, 25, 25, 25, 25, 25],        // горизонтальная линия среднего значения
+              borderColor: 'rgb(108, 117, 125)',          // серый цвет
+              backgroundColor: 'rgba(108, 117, 125, 0)',
+              borderWidth: 2,
+              borderDash: [5, 5],                         // пунктирная линия (5px черта, 5px пропуск)
+              fill: false,
+              pointRadius: 0                              // без точек на линии среднего значения
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  if (context.dataset.label === 'Среднее значение') {
+                    return `Среднее: ${context.raw} атак`;
+                  }
+                  return `Атак: ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Количество атак' }
+            },
+            x: {
+              title: { display: true, text: 'Дни недели' }
+            }
+          }
+        }
+      });
+    </script>
+
+  </body>
+</html>
